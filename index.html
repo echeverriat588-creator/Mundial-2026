@@ -198,7 +198,7 @@ tr.q1 .tname,tr.q2 .tname{color:var(--ink);font-weight:600}
 <nav class="tabs"><div class="wrap">
   <button class="tab on" data-view="grupos">Grupos</button>
   <button class="tab" data-view="cuadro">Cuadro <span class="badge hidden" id="cuadroBadge">listo</span></button>
-  <button class="tab" data-view="ranking">Ranking</button>
+  <button class="tab" data-view="ranking">Resumen</button>
 </div></nav>
 
 <main class="wrap">
@@ -239,11 +239,13 @@ tr.q1 .tname,tr.q2 .tname{color:var(--ink);font-weight:600}
    Pegá acá la config de tu proyecto Firebase (Realtime Database).
    Dejalo vacío para usar solo guardado local en este dispositivo. */
 const FIREBASE_CONFIG = {
-  // apiKey: "...",
-  // authDomain: "...",
-  // databaseURL: "https://TU-PROYECTO-default-rtdb.firebaseio.com",
-  // projectId: "...",
-  // appId: "..."
+  apiKey: "AIzaSyAu6jACDRdmK9SSUA7htyfqJQRtZcLiQ9U",
+  authDomain: "mundial2026wc.firebaseapp.com",
+  databaseURL: "https://mundial2026wc-default-rtdb.firebaseio.com",
+  projectId: "mundial2026wc",
+  storageBucket: "mundial2026wc.firebasestorage.app",
+  messagingSenderId: "608717043719",
+  appId: "1:608717043719:web:04aa84290e30b539c212a2"
 };
 
 let DB=null, FB_ON=false;
@@ -353,36 +355,32 @@ function buildBracket(results,ko){
 <script>
 /* ---------- 3) ESTADO + PERSISTENCIA ---------- */
 let state={results:{},ko:{},name:"",room:"",uid:""};
-let view="grupos", koRound="R32", saveTimer=null, roomData={};
+let view="grupos", koRound="R32", saveTimer=null;
+let clientId="c"+Math.random().toString(36).slice(2,9), lastRemote=0;
 
-function uid(){let u=localStorage.getItem("pollawc26:uid");if(!u){u="u"+Math.random().toString(36).slice(2,9);localStorage.setItem("pollawc26:uid",u);}return u;}
 const $=s=>document.querySelector(s);
 const ce=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
 function flag(code){if(code==="gb-eng")return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";if(code==="gb-sct")return "🏴󠁧󠁢󠁳󠁣󠁴󠁿";
   return code.toUpperCase().replace(/./g,ch=>String.fromCodePoint(127397+ch.charCodeAt()));}
 const T=id=>TEAMS[id];
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1800);}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2400);}
 function setDot(s){const d=$("#saveDot");d.className="save-dot"+(s?(" "+s):"");
-  const l=$("#saveLabel");if(l)l.textContent=s==="busy"?"Guardando…":"Guardado";}
+  const l=$("#saveLabel");if(l)l.textContent=s==="busy"?"Guardando…":(FB_ON?"En la nube ✓":"Guardado (este equipo)");}
 
 function persist(){
   setDot("busy");
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
-    const payload={name:state.name,results:state.results,ko:state.ko,updatedAt:Date.now()};
+    lastRemote=Date.now();
+    const payload={name:state.name,results:state.results,ko:state.ko,updatedAt:lastRemote,by:clientId};
     if(FB_ON){
-      DB.ref("salas/"+state.room+"/participantes/"+state.uid).set(payload)
-        .then(()=>setDot("ok")).catch(()=>{setDot();toast("Error al guardar");});
+      DB.ref("salas/"+state.room+"/polla").set(payload)
+        .then(()=>setDot("ok")).catch(()=>{setDot();toast("No se pudo guardar en la nube — revisá las reglas de Firebase");});
     }else{
-      localStorage.setItem("pollawc26:"+state.room+":"+state.uid,JSON.stringify(payload));
-      setDot("ok");
+      try{localStorage.setItem("pollawc26:"+state.room,JSON.stringify(payload));setDot("ok");}
+      catch(e){setDot();toast("Este navegador no está permitiendo guardar (¿modo privado?)");}
     }
   },450);
-}
-function loadSelf(){
-  if(FB_ON) return; // FB carga vía listener
-  const raw=localStorage.getItem("pollawc26:"+state.room+":"+state.uid);
-  if(raw){try{const d=JSON.parse(raw);state.results=d.results||{};state.ko=d.ko||{};}catch(e){}}
 }
 
 /* ---------- 4) ACCIONES DE MARCADOR ---------- */
@@ -553,49 +551,52 @@ function renderKoBody(bb){
   if(!bb.th.ready){$("#koBody").innerHTML=`<div class="lock-msg"><b>El cuadro se arma solo.</b><br>Cargá los 72 partidos de grupos (botón <b>Sugerir todo</b> para empezar) y acá aparecen los cruces de 32avos, listos para editar.</div>`;return;}
   $("#koBody").innerHTML=`<div class="ko-list">`+ROUND_DEFS[koRound].ids.map(id=>koCardHTML(id,bb)).join("")+`</div>`;
 }
+function childrenOf(id){
+  if(id.startsWith("SF"))return TREE.SF[+id.split("_")[1]];
+  if(id.startsWith("QF"))return TREE.QF[+id.split("_")[1]];
+  if(id.startsWith("R16"))return TREE.R16[+id.split("_")[1]];
+  return null; // M.. = hoja (32avos)
+}
+function nodeHTML(id,side,bb){
+  const kids=childrenOf(id);
+  const card=`<div class="bmatch">${koCardHTML(id,bb)}</div>`;
+  if(!kids)return `<div class="bnode leaf">${card}</div>`;
+  const kidsHTML=`<div class="bkids">${nodeHTML(kids[0],side,bb)}${nodeHTML(kids[1],side,bb)}</div>`;
+  return side==="L"
+    ? `<div class="bnode">${kidsHTML}${card}</div>`
+    : `<div class="bnode">${card}${kidsHTML}</div>`;
+}
 function renderTree(bb){
   const tv=$("#treeView");
-  if(!bb.th.ready){tv.classList.remove("active");return;}
+  if(!bb.th.ready){tv.classList.remove("active");tv.innerHTML="";return;}
   tv.classList.add("active");
-  const col=(title,ids,extra="")=>`<div class="col ${extra}"><div class="ctitle">${title}</div>${ids.map(id=>koCardHTML(id,bb)).join("")}</div>`;
+  const champ=bb.champ
+    ?`<div class="tree-champ"><span class="flag">${flag(T(bb.champ).c)}</span>${T(bb.champ).n}</div>`
+    :`<div class="tree-champ tbd">Por definir</div>`;
   tv.innerHTML=
-    col("32avos",["M1","M2","M3","M4","M5","M6","M7","M8"])+
-    col("Octavos",["R16_0","R16_1","R16_2","R16_3"])+
-    col("Cuartos",["QF_0","QF_1"])+
-    col("Semifinal",["SF_0"])+
-    col("Final",["F_0"],"final-col")+
-    col("Semifinal",["SF_1"])+
-    col("Cuartos",["QF_2","QF_3"])+
-    col("Octavos",["R16_4","R16_5","R16_6","R16_7"])+
-    col("32avos",["M9","M10","M11","M12","M13","M14","M15","M16"]);
+    `<div class="half left">${nodeHTML("SF_0","L",bb)}</div>`+
+    `<div class="final-wrap"><div class="ftitle">★ Final ★</div><div class="bmatch">${koCardHTML("F_0",bb)}</div>`+
+      `<div class="tree-trophy">🏆</div>${champ}</div>`+
+    `<div class="half right">${nodeHTML("SF_1","R",bb)}</div>`;
 }
 function renderCuadro(){
   const bb=buildBracket(state.results,state.ko);
   renderChamp(bb);renderKoTabs(bb);renderKoBody(bb);renderTree(bb);
+  $("#koBody").classList.toggle("desktop-hide",bb.th.ready);
 }
 
-/* ---------- 7) RENDER: RANKING ---------- */
-function participantSummary(p){
-  const bb=buildBracket(p.results||{},p.ko||{});
-  let filled=0;GKEYS.forEach(g=>{for(let i=0;i<6;i++){const r=(p.results||{})[g+i];if(r&&r.h!=null&&r.a!=null)filled++;}});
-  const fin=bb.nodes["F_0"];
-  return {name:p.name||"—",champ:bb.champ,finalists:fin?[fin.a,fin.b].filter(Boolean):[],filled,uid:p._uid};
-}
+/* ---------- 7) RENDER: RESUMEN ---------- */
 function renderRanking(){
   const card=$("#rankCard");
-  let list=[];
-  if(FB_ON){list=Object.keys(roomData).map(u=>({...roomData[u],_uid:u}));}
-  else{list=[{name:state.name,results:state.results,ko:state.ko,_uid:state.uid}];}
-  if(!list.length){card.innerHTML=`<div class="empty-room">Todavía no hay participantes en la sala.</div>`;return;}
-  const rows=list.map(participantSummary).sort((a,b)=>b.filled-a.filled);
-  card.innerHTML=rows.map((r,i)=>{
-    const champ=r.champ?`<span class="flag">${flag(T(r.champ).c)}</span>${T(r.champ).n}`:`<span style="color:var(--faint)">sin definir</span>`;
-    return `<div class="rk-row ${r.uid===state.uid?'me':''}">
-      <span class="rkn">${i+1}</span>
-      <div class="who">${r.name}${r.uid===state.uid?' <span style="color:var(--accent);font-size:11px">(vos)</span>':''}
-        <div class="pick">🏆 ${champ}</div></div>
-      <span class="pts">${r.filled}/72</span></div>`;
-  }).join("")+(FB_ON?"":`<div class="empty-room">Conectá Firebase para que tus amigos aparezcan acá y compitan en la misma sala.</div>`);
+  const bb=buildBracket(state.results,state.ko);
+  let filled=0;GKEYS.forEach(g=>{for(let i=0;i<6;i++){const r=state.results[g+i];if(r&&r.h!=null&&r.a!=null)filled++;}});
+  const champ=bb.champ?`<span class="flag">${flag(T(bb.champ).c)}</span>${T(bb.champ).n}`:`<span style="color:var(--faint)">sin definir</span>`;
+  const f=bb.nodes["F_0"];
+  const fin=(f&&f.a&&f.b)?`${T(f.a).n} vs ${T(f.b).n}`:"—";
+  card.innerHTML=`<div class="rk-row me"><span class="rkn">★</span>
+    <div class="who">Tu polla<div class="pick">🏆 Campeón: ${champ}</div>
+    <div class="pick">🥇 Final: ${fin}</div></div>
+    <span class="pts">${filled}/72</span></div>`;
 }
 
 /* ---------- 8) COMPARTIR ---------- */
@@ -657,17 +658,26 @@ function koClick(e){const b=e.target.closest("[data-kosug]");if(!b)return;
 
 /* ---------- 11) INIT / SALA ---------- */
 function enterRoom(name,room){
-  state.uid=uid();state.name=name;state.room=room;
+  state.name=name;state.room=room;
   $("#joinModal").classList.add("hidden");
   localStorage.setItem("pollawc26:last",JSON.stringify({name,room}));
   if(FB_ON){
-    DB.ref("salas/"+room+"/participantes/"+state.uid).once("value").then(s=>{
-      const d=s.val();if(d){state.results=d.results||{};state.ko=d.ko||{};}
-      if(!d)persist(); renderAll();
-    });
-    DB.ref("salas/"+room+"/participantes").on("value",s=>{roomData=s.val()||{};renderRanking();});
-  }else{loadSelf();renderAll();}
-  setDot("ok");
+    const ref=DB.ref("salas/"+room+"/polla");
+    ref.once("value").then(s=>{
+      const d=s.val();
+      if(d){state.results=d.results||{};state.ko=d.ko||{};lastRemote=d.updatedAt||0;}
+      renderAll();setDot("ok");
+      // sync en vivo: si editás en otro dispositivo, este se actualiza
+      ref.on("value",s2=>{const d2=s2.val();if(!d2)return;
+        if(d2.by!==clientId && (d2.updatedAt||0)>lastRemote){
+          lastRemote=d2.updatedAt||0;state.results=d2.results||{};state.ko=d2.ko||{};
+          renderAll();toast("Actualizado desde otro dispositivo");}});
+    }).catch(()=>{renderAll();setDot();toast("No se pudo leer la nube — revisá databaseURL y las reglas");});
+  }else{
+    const raw=localStorage.getItem("pollawc26:"+room);
+    if(raw){try{const d=JSON.parse(raw);state.results=d.results||{};state.ko=d.ko||{};}catch(e){}}
+    renderAll();setDot("ok");
+  }
 }
 function initModal(){
   $("#cfgWarn").classList.toggle("hidden",FB_ON);
