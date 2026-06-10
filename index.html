@@ -469,29 +469,35 @@ function updateProgress(){
 </script>
 <style>@media(min-width:900px){#koBody.desktop-hide{display:none}}
 @media(min-width:900px){
-  .tree.active{display:flex;align-items:center;justify-content:flex-start;gap:6px;padding:18px 4px 36px;overflow-x:auto}
+  .tree.active{
+    --bw:150px;                 /* ancho de cada llave: bajalo (140px / 132px) si tu pantalla es chica */
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100vw;position:relative;left:50%;margin-left:-50vw;  /* usa TODO el ancho de la ventana y centra */
+    padding:16px 28px 38px;overflow-x:auto;
+  }
   .half{display:flex;align-items:center}
-  .bnode{display:flex;align-items:center;gap:16px}
+  .bnode{display:flex;align-items:center;gap:10px}
   .bkids{display:flex;flex-direction:column;justify-content:center;position:relative}
-  .bmatch{position:relative;flex:none;width:194px;margin:0}
-  .tree .koc{width:194px;margin:4px 0;padding:3px}
-  .tree .ko-meta{font-size:9px;padding:4px 8px 1px}
-  .tree .ko-side{padding:6px 8px;font-size:12.5px}
+  .bmatch{position:relative;flex:none;width:var(--bw);margin:0}
+  .tree .koc{width:var(--bw);margin:3px 0;padding:3px}
+  .tree .ko-meta{font-size:8px;padding:3px 7px 0}
+  .tree .ko-side{padding:5px 7px;font-size:11.5px}
+  .tree .ko-side .stepper{width:26px;height:24px;font-size:12px}
   .tree .side-tag{display:none}
   /* spine vertical que une cada par, del lado que mira al padre */
   .half.left .bkids::after{content:'';position:absolute;right:0;top:25%;bottom:25%;width:2px;background:var(--line)}
   .half.right .bkids::before{content:'';position:absolute;left:0;top:25%;bottom:25%;width:2px;background:var(--line)}
   /* stub horizontal del spine al partido padre */
-  .half.left .bnode:not(.leaf)>.bmatch::before{content:'';position:absolute;left:-16px;width:16px;height:2px;top:50%;background:var(--line)}
-  .half.right .bnode:not(.leaf)>.bmatch::after{content:'';position:absolute;right:-16px;width:16px;height:2px;top:50%;background:var(--line)}
+  .half.left .bnode:not(.leaf)>.bmatch::before{content:'';position:absolute;left:-10px;width:10px;height:2px;top:50%;background:var(--line)}
+  .half.right .bnode:not(.leaf)>.bmatch::after{content:'';position:absolute;right:-10px;width:10px;height:2px;top:50%;background:var(--line)}
   /* final central + campeón */
-  .final-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;flex:none;margin:0 8px;position:relative}
-  .final-wrap .ftitle{font-size:11px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;font-weight:800}
-  .final-wrap .bmatch::before{content:'';position:absolute;left:-20px;width:20px;height:2px;top:50%;background:var(--line)}
-  .final-wrap .bmatch::after{content:'';position:absolute;right:-20px;width:20px;height:2px;top:50%;background:var(--line)}
-  .tree-champ{display:flex;align-items:center;gap:9px;font-family:var(--fd);font-weight:900;font-size:19px;color:var(--gold);text-align:center}
-  .tree-champ .flag{font-size:24px} .tree-champ.tbd{color:var(--faint);font-size:14px;font-weight:600}
-  .tree-trophy{font-size:30px;filter:drop-shadow(0 0 10px rgba(232,184,75,.4))}
+  .final-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;flex:none;margin:0 6px;position:relative}
+  .final-wrap .ftitle{font-size:10px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;font-weight:800}
+  .final-wrap .bmatch::before{content:'';position:absolute;left:-14px;width:14px;height:2px;top:50%;background:var(--line)}
+  .final-wrap .bmatch::after{content:'';position:absolute;right:-14px;width:14px;height:2px;top:50%;background:var(--line)}
+  .tree-champ{display:flex;align-items:center;gap:8px;font-family:var(--fd);font-weight:900;font-size:17px;color:var(--gold);text-align:center}
+  .tree-champ .flag{font-size:22px} .tree-champ.tbd{color:var(--faint);font-size:13px;font-weight:600}
+  .tree-trophy{font-size:26px;filter:drop-shadow(0 0 10px rgba(232,184,75,.4))}
 }</style>
 <script>
 /* ---------- 6) RENDER: CUADRO ---------- */
