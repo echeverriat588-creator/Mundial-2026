@@ -66,7 +66,8 @@ table.tbl th{font-size:10px;font-weight:600;color:var(--faint);text-transform:up
 table.tbl th.l{text-align:left;padding-left:13px}
 table.tbl td{padding:6px;text-align:center;border-top:1px solid var(--line)}
 table.tbl td.l{text-align:left;padding-left:10px;display:flex;align-items:center;gap:8px}
-.flag{font-size:17px;line-height:1;flex:none}
+.flag{font-size:17px;line-height:0;flex:none;display:inline-flex;align-items:center}
+.flag img{height:1em;width:auto;display:block;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .pos-pill{width:18px;height:18px;border-radius:5px;font-size:10px;font-weight:800;font-family:var(--fm);display:flex;align-items:center;justify-content:center;flex:none;background:var(--surf3);color:var(--muted)}
 tr.q1 .pos-pill{background:var(--pos);color:#03260f} tr.q2 .pos-pill{background:#2aa978;color:#03260f}
 tr.q3 .pos-pill{background:var(--warn);color:#2a1d00}
@@ -360,8 +361,7 @@ let clientId="c"+Math.random().toString(36).slice(2,9), lastRemote=0;
 
 const $=s=>document.querySelector(s);
 const ce=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
-function flag(code){if(code==="gb-eng")return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";if(code==="gb-sct")return "🏴󠁧󠁢󠁳󠁣󠁴󠁿";
-  return code.toUpperCase().replace(/./g,ch=>String.fromCodePoint(127397+ch.charCodeAt()));}
+function flag(code){return `<img loading="lazy" alt="" src="https://flagcdn.com/${code}.svg">`;}
 const T=id=>TEAMS[id];
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2400);}
 function setDot(s){const d=$("#saveDot");d.className="save-dot"+(s?(" "+s):"");
